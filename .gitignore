@@ -1,4 +1,6 @@
 data
+rawdata
 .vscode
 tmp*
 .ipynb_checkpoints
+log

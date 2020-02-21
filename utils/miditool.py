@@ -17,16 +17,19 @@ class AbsNote():
     """
 
     # from dangen/MidiToText
-    def __init__(self, time, pitch, dur):
+    def __init__(self, time, pitch, dur, instru='piano'):
         r"""
         Args:
             time: absolute time the note was played (microsecond)
             pitch: pitch
             dur: absolute duration of the note (microsecond)
+            instru: instrument in ('piano', 'violin', 'cello', 'guitar', 'flute', 'other')
         """
         self.time = time
         self.pitch = pitch
         self.dur = dur
+        instrus = ('piano', 'violin', 'cello', 'guitar', 'flute', 'other')
+        self.instru = instru if instru in instrus else 'other'
 
     def __str__(self):
         return str((self.time, self.pitch, self.dur))
@@ -63,8 +66,6 @@ def get_simplified_event_list(file):
     pattern = midi.read_midifile(file)
     pattern.make_ticks_abs()
     resolution = pattern.resolution  # resolution is a const
-    print(pattern.format)
-    print(pattern, file=open('tmptmp', 'w'))
 
     if pattern.format not in (0, 1):
         raise ValueError("Pattern format is not 0 or 1. Format 2 is not supported.")
@@ -98,7 +99,6 @@ def convert_to_abs_notes(file):
     notes = []
 
     for track in tracks:
-        print(track, file=open('tmpnotes', 'w'))
         num_on = sum(i[-1] == 'on' for i in track)
         num_off = sum(i[-1] == 'off' for i in track)
         if num_on != num_off:
@@ -107,15 +107,16 @@ def convert_to_abs_notes(file):
 
         # microsecond per tick = 6e7 / bpm / resolution.
         us_per_tick = 6e7 / 120 / resolution  # default bpm = 120
-        ons = {}  # NoteOnEvent -> absolute time
+        ons = {}  # pitch -> absolute time list
         abstime = 0
         abstick = 0
 
         def found_off(pitch):
             if pitch not in ons:
                 return
-            on = ons[pitch]
-            ons.pop(pitch)
+            on = ons[pitch].pop(0)
+            if len(ons[pitch]) == 0:
+                ons.pop(pitch)
             duration = abstime - on
             note = AbsNote(on, pitch, duration)
             notes.append(note)
@@ -128,10 +129,12 @@ def convert_to_abs_notes(file):
                 us_per_tick = evt[1] / resolution
             elif evt[-1] == 'on':
                 # if evt[1] in ons: found_off(evt[1]); print('on overlaps!')
+                # if evt[1] in ons:
+                #     raise ValueError("Corrupted MIDI. NoteOnEvents overlapped.")
                 if evt[1] in ons:
-                    raise ValueError("Corrupted MIDI. NoteOnEvents overlapped.")
-                # ons[pitch] = abstime
-                ons[evt[1]] = abstime
+                    ons[evt[1]].append(abstime)
+                else:
+                    ons[evt[1]] = [abstime]
             elif evt[-1] == "off":
                 found_off(evt[1])
 

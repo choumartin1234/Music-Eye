@@ -5,7 +5,7 @@ from torch.nn import functional as F
 
 default_config = {
     'cnn_ch_in': 1,
-    'cnn_ch_out': 16,  # for now cnn_ch_out need to be the same as cnn_ch_in
+    'cnn_ch_out': 384,  # for now cnn_ch_out need to be the same as cnn_ch_in
     'cnn_kernel_size': 15,
     'cnn_stride': 1,
     'cnn_padding': 0,
