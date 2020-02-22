@@ -143,4 +143,4 @@ def convert_to_abs_notes(file):
             raise ValueError("Corrupted MIDI. Unclosed NoteOnEvent found.")
         # keys = list(ons.keys())
         # for pitch in keys:  found_off(pitch) print('off missing!')
-    return notes
+    return sorted(notes, key=lambda x: (x.time, ))
