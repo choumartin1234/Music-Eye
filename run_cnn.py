@@ -26,8 +26,8 @@ class SpectrumCNN(nn.Module):
             nn.Conv2d(8, 8, 3, 1, 1),
             nn.Conv2d(8, 8, 3, 1, 1),
             nn.Conv2d(8, 8, 3, 1, 1),
-            nn.Conv2d(8, 8, 3, 1, 1),
-            nn.Conv2d(8, 8, 3, 1, 1),
+            # nn.Conv2d(8, 8, 3, 1, 1),
+            # nn.Conv2d(8, 8, 3, 1, 1),
             nn.Conv2d(8, 2, 3, 1, 1),
         ])
         self.pools = nn.ModuleList([
@@ -57,28 +57,32 @@ class SpectrumCNN(nn.Module):
         p = self.pools
         d = self.dropouts
         n = self.layernorms
+        relu = nn.functional.relu
         #print(x.shape)
         
-        x = n[0](d[0](c[1](c[0](x))) + x)
-        #print(x.shape)
+        x = relu(c[0](x)) + x
+        x = relu(c[1](x)) + x
+        x = n[0](d[0](x))
         
         x = p[0](x)
-        #print(x.shape)
         
-        x = n[1](d[1](c[3](c[2](x))) + x)
-        #print(x.shape)
+        x = relu(c[2](x)) + x
+        x = relu(c[3](x)) + x
+        x = n[1](d[1](x))
         
         x = p[1](x)
         #print(x.shape)
         
         
-        x = n[2](d[2](c[5](c[4](x))) + x)
-        #print(x.shape)
-        return torch.sigmoid(c[7](c[6](x) + x))
+        x = relu(c[4](x)) + x
+        x = c[5](x)
+        return torch.sigmoid(x)
+#        return torch.sigmoid(c[7](c[6](x) + x))
 
 
 net = SpectrumCNN()
 optimizer = optim.Adam(net.parameters())
+criterion = nn.BCELoss(reduction='mean')
 
 class Mp3Dataset(Dataset):
     def __init__(self, path='data', tone_shift=True, time_shift=True, noise=True, hop_ms=3000, frame_ms=10, n_frame=50):
@@ -154,7 +158,7 @@ class SpectrumDataset(Dataset):
 
 mididata = SpectrumDataset()
 
-batch_size = 14
+batch_size = 16
 train = DataLoader(mididata, batch_size=batch_size, shuffle=True)
 
 
@@ -175,15 +179,17 @@ plt.ion()
 
 trainsize = len(mididata)
 step_per_epoch = trainsize // batch_size
-for e in range(20):
+for e in range(200):
     logger.info('epoch '+str(e))    
     step = 0
     for x, y in train:
         optimizer.zero_grad()
         x, y = x.cuda(), y.cuda()
+        x = x[:, :-1, :]
         x.unsqueeze_(1)
         ypred = net(x)
-        loss = torch.mean((y-ypred)**2)
+        #loss = criterion(ypred[:,1,:], y[:,1,:])
+        loss = criterion(ypred, y) + 0.5 * e * torch.mean((1-ypred) * y)
         loss.backward()
         logger.info('epoch {} step {}/{} loss {}'.format(e,  step, step_per_epoch, loss.data.cpu().numpy()))
         optimizer.step()
@@ -199,8 +205,9 @@ for e in range(20):
             plt.subplot(144)
             plt.imshow(ydata[1])
             plt.pause(0.2)
-            plt.savefig('epoch {} step {}'.format(e, step))
+            plt.savefig('outputs/epoch {} step {}'.format(e, step))
         step += 1
-
+    torch.save(net.state_dict(), 'outputs/checkpoint')
+    torch.save(optimizer.state_dict(), 'outputs/optim')
 plt.ioff()
 plt.show()

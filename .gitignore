@@ -1,8 +1,9 @@
 data
+backup
 mp3data
 rawdata
 .vscode
 tmp*
 .ipynb_checkpoints
-log
+.log
 __pycache__
