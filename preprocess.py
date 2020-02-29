@@ -20,7 +20,7 @@ def convert_midi_to_mp3(infile, outfile, bit='32k'):
         bit (str): output bit rate. Default 32k.
     """
     os.system("timidity " + quote(infile) + " -Ow -o - |"\
-        " /usr/local/ffmpeg/bin/ffmpeg -i - -acodec libmp3lame -ac 1 -ab "+bit + " " + quote(outfile))
+        " ffmpeg -i - -acodec libmp3lame -ac 1 -ab "+bit + " " + quote(outfile))
 
 
 """ this cut function's outputs are not always accurate """
