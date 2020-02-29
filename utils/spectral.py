@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import librosa
 import resampy
-from .torchvggish.torchvggish import vggish_input
+#from .torchvggish.torchvggish import vggish_input
 
 def spectrum(data, fs=44100, target_fs=12800, hop_length=128, cqt=True, fmin=27.5, n_bins=87*4+1, bins_per_octave=4*12):
     if fs != target_fs:

@@ -1,0 +1,3 @@
+2020-02-26 12:34:33,489 - __main__ - INFO - No.0 [Errno 21] Is a directory: 'rawdata/__MACOSX'
+2020-02-26 12:34:34,473 - __main__ - INFO - No.0 name 'cut_mp3' is not defined
+2020-02-26 12:34:34,474 - __main__ - INFO - No.0 [Errno 21] Is a directory: 'rawdata/midi_set'

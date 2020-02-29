@@ -94,23 +94,23 @@ if __name__ == '__main__':
     inpath = 'rawdata'
     mp3path = 'mp3data'
     spectpath = 'data'
-    # dic = {}
-    # i = 0
-    # for mid in os.listdir(inpath):
-    #     try:
-    #         mid = os.path.join(inpath, mid)
-    #         out = os.path.join(mp3path, str(i))
-    #         convert_midi_to_label(mid, out + '.label')
-    #         convert_midi_to_mp3(mid, out + '.mp3')
-    #         cut_mp3(out + '.mp3', 15)
-    #         os.system('rm ' + quote(out) + ".mp3")
-    #         dic[i] = mid
-    #         i += 1
-    #     except Exception as e:
-    #         logger.info('No.{} {}'.format(i, e))
-    # with open(os.path.join(mp3path, 'map'), "w") as f:
-    #     for k, v in dic.items():
-    #         f.write(str(k) + '\t' + str(v) + '\n')
+    dic = {}
+    i = 0
+    for mid in os.listdir(inpath):
+        try:
+            mid = os.path.join(inpath, mid)
+            out = os.path.join(mp3path, str(i))
+            convert_midi_to_label(mid, out + '.label')
+            convert_midi_to_mp3(mid, out + '.mp3')
+            cut_mp3(out + '.mp3', 15)
+            os.system('rm ' + quote(out) + ".mp3")
+            dic[i] = mid
+            i += 1
+        except Exception as e:
+            logger.info('No.{} {}'.format(i, e))
+    with open(os.path.join(mp3path, 'map'), "w") as f:
+        for k, v in dic.items():
+            f.write(str(k) + '\t' + str(v) + '\n')
     """ cut function is deprecated """
     # mp3s = [mp3path+'/'+i for i in os.listdir(mp3path) if i[-4:] == '.mp3']
     # for i, mp3 in enumerate(mp3s):

@@ -11,6 +11,8 @@ Project of 2020 Challenge Cup
 - music21 5.7.2
 - midi (vishnubob/python-midi)
 - ffmpeg 4.0
+- librosa
+- pydub
 
 ## Reference
 
