@@ -104,7 +104,6 @@ if __name__ == '__main__':
             out = os.path.join(mp3path, str(i))
             convert_midi_to_label(mid, out + '.label')
             convert_midi_to_mp3(mid, out + '.mp3')
-            os.system('rm ' + quote(out) + ".mp3")
             dic[i] = mid
             i += 1
         except Exception as e:
