@@ -1,6 +1,6 @@
 import os
 from utils.utils import quote
-from utils.miditool import convert_to_abs_notes
+from utils.miditool import convert_to_abs_notes, transpose_tone)
 from utils.spectral import spectrum
 import numpy as np
 import math
@@ -99,6 +99,8 @@ if __name__ == '__main__':
     for mid in os.listdir(inpath):
         try:
             mid = os.path.join(inpath, mid)
+            transpose_tone(mid, 'tmp.mid', round(np.random.normal(0, 2)))
+            mid = 'tmp.mid'
             out = os.path.join(mp3path, str(i))
             convert_midi_to_label(mid, out + '.label')
             convert_midi_to_mp3(mid, out + '.mp3')

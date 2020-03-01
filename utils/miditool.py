@@ -11,6 +11,36 @@ def play(file):
     os.system("timidity " + quote(file))
 
 
+def transpose_tone(infile, outfile, bias):
+    r"""
+    Transpose the tone of a midi file. If `bias` is negative,
+    it becomes flat. If `bias` is  positive, it becomes sharp.
+
+    Args:
+        infile (str): input midi file
+        outfile (str): output midi file
+        bias (int): the distance the tone shifts. If the bias is too large,
+            and makes some note out of [21, 108], the bias will be modified.
+    """
+
+    pattern = midi.read_midifile(infile)
+    
+    if pattern.format not in (0, 1):
+        raise ValueError("Pattern format is not 0 or 1. Format 2 is not supported.")
+    
+    m, M = -128, 128
+    for track in pattern:
+        for evt in track:
+            if isinstance(evt, (midi.NoteOnEvent, midi.NoteOffEvent)):
+                m = max(21 - evt.data[0], m)
+                M = min(108 - evt.data[0], M)
+    bias = min(max(m, bias), M)
+    for track in pattern:
+        for evt in track:
+            if isinstance(evt, (midi.NoteOnEvent, midi.NoteOffEvent)):
+                evt.data[0] += bias
+    midi.write_midifile(outfile, pattern)
+    
 class AbsNote():
     r"""
     Records absolute time, pitch, and abosolute duration.
