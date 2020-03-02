@@ -36,6 +36,13 @@ def convert_midi_to_mp3(infile, outfile, bit='32k'):
 #         " -f segment -segment_time "+ str(segment_sec) +\
 #             " -c copy \"" + infile[:-3] + "%02d.mp3\"")
 
+def float_to_uint8(s):
+    s = ((s - np.log2(0.01)) / (1 - np.log2(0.01)) * 255)
+    return s.astype(np.uint8)
+
+def uint8_to_float(s):
+    return  np.log2(0.01) + s * (1 - np.log2(0.01)) / 255
+
 
 def convert_midi_to_label(infile, outfile):
     label = convert_to_abs_notes(infile)
@@ -154,9 +161,8 @@ if __name__ == '__main__':
             # np.savez_compressed(path, spectrum=s.astype('float'), label=l.astype('float')) 
 
             import imageio
-            s = ((s - np.log2(0.01)) / (2 - np.log2(0.01)) * 255)
-            imageio.imwrite(path+'_s.jpg', s.astype(np.uint8))
-            imageio.imwrite(path+'_0.jpg', l[0])
-            imageio.imwrite(path+'_1.jpg', l[1])
+            s = float_to_uint8(s)
+            imageio.imwrite(path+'.jpg', s.astype(np.uint8))
+            torch.save(torch.BoolTensor(l), path+'.label')
             
             n_tot_clip += 1
