@@ -24,10 +24,11 @@ def transpose_tone(infile, outfile, bias):
     """
 
     pattern = midi.read_midifile(infile)
-    
+
     if pattern.format not in (0, 1):
-        raise ValueError("Pattern format is not 0 or 1. Format 2 is not supported.")
-    
+        raise ValueError(
+            "Pattern format is not 0 or 1. Format 2 is not supported.")
+
     m, M = -128, 128
     for track in pattern:
         for evt in track:
@@ -40,7 +41,37 @@ def transpose_tone(infile, outfile, bias):
             if isinstance(evt, (midi.NoteOnEvent, midi.NoteOffEvent)):
                 evt.data[0] += bias
     midi.write_midifile(outfile, pattern)
+
+
+def restrict_instrument(infile, outfile, allowset=None,
+                        forbidset=[47, 49, 48, 67, 19, 52]):
+    r"""
+    Restrict the midi instrument in `allowset` for every track.
+    If `allowset` is `None`, the `allowset` will be the instruments
+    not in `forbidset`. The subsitution for forbidden instruments is piano.
     
+    Args:
+        infile (str): input midi file
+        outfile (str): output midi file
+        allowset (list): a list of ids of allowed instruments
+        forbidset (list): a list of ids of forbidden instruments
+    """
+    pattern = midi.read_midifile(infile)
+
+    if allowset is None:
+        allowset == [i for i in range(256) if i not in forbidset]
+
+    if pattern.format not in (0, 1):
+        raise ValueError(
+            "Pattern format is not 0 or 1. Format 2 is not supported.")
+
+    for track in pattern:
+        for evt in track:
+            if isinstance(evt, midi.ProgramChangeEvent):
+                if evt.data[0] not in allowset:
+                    evt.data[0] = allowset[0]
+    midi.write_midifile(outfile, pattern)
+
 class AbsNote():
     r"""
     Records absolute time, pitch, and abosolute duration.
@@ -73,9 +104,9 @@ def simplifyMidiEvent(evt):
     """
     if isinstance(evt, midi.NoteOnEvent):
         if evt.data[1] == 0:
-            return evt.tick, evt.data[0],'off'
+            return evt.tick, evt.data[0], 'off'
         else:
-            return evt.tick, evt.data[0],'on'
+            return evt.tick, evt.data[0], 'on'
     elif isinstance(evt, midi.NoteOffEvent):
         return evt.tick, evt.data[0],    'off'
     elif isinstance(evt, midi.EndOfTrackEvent):
@@ -98,7 +129,8 @@ def get_simplified_event_list(file):
     resolution = pattern.resolution  # resolution is a const
 
     if pattern.format not in (0, 1):
-        raise ValueError("Pattern format is not 0 or 1. Format 2 is not supported.")
+        raise ValueError(
+            "Pattern format is not 0 or 1. Format 2 is not supported.")
 
     def parse_track(track):
         events = []
@@ -132,8 +164,8 @@ def convert_to_abs_notes(file):
         num_on = sum(i[-1] == 'on' for i in track)
         num_off = sum(i[-1] == 'off' for i in track)
         if num_on != num_off:
-            raise ValueError("Corrupted MIDI. NoteOnEvent count = {}, "\
-                "NoteOffEvent count = {}".format(num_on, num_off))
+            raise ValueError("Corrupted MIDI. NoteOnEvent count = {}, "
+                             "NoteOffEvent count = {}".format(num_on, num_off))
 
         # microsecond per tick = 6e7 / bpm / resolution.
         us_per_tick = 6e7 / 120 / resolution  # default bpm = 120

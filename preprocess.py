@@ -1,6 +1,6 @@
 import os
 from utils.utils import quote
-from utils.miditool import convert_to_abs_notes, transpose_tone
+from utils.miditool import convert_to_abs_notes, transpose_tone, restrict_instrument
 from utils.spectral import spectrum
 import numpy as np
 import math
@@ -19,8 +19,8 @@ def convert_midi_to_mp3(infile, outfile, bit='32k'):
         outfile (str): output mp3 file
         bit (str): output bit rate. Default 32k.
     """
-    os.system("timidity " + quote(infile) + " -Ow -o - |"\
-        " ffmpeg -i - -acodec libmp3lame -ac 1 -ab "+bit + " " + quote(outfile))
+    assert 0 == os.system("timidity " + quote(infile) + " -Ow -o - |"\
+        " ffmpeg -y -i - -acodec libmp3lame -ac 1 -ab "+bit + " " + quote(outfile))
 
 
 """ this cut function's outputs are not always accurate """
@@ -100,6 +100,7 @@ if __name__ == '__main__':
         try:
             mid = os.path.join(inpath, mid)
             transpose_tone(mid, 'tmp.mid', round(np.random.normal(0, 2)))
+            restrict_instrument('tmp.mid', 'tmp.mid')
             mid = 'tmp.mid'
             out = os.path.join(mp3path, str(i))
             convert_midi_to_label(mid, out + '.label')
@@ -145,15 +146,17 @@ if __name__ == '__main__':
         label = [label_clip_to_onehot(label, clip, offset_ms=1000) for clip in range(n_clip)]
         spec = [spectrum(mp3[clip * len_clip:(clip + 1) * len_clip], n_bins=352) for clip in range(n_clip)]
         for s, l in zip(spec, label):
-            # plt.figure(figsize=(16,16))
-            # plt.subplot(131)
-            # plt.imshow(s)
-            # plt.subplot(132)
-            # plt.imshow(l[0])
-            # plt.subplot(133)
-            # plt.imshow(l[1])
-            # plt.imshow()
             path = os.path.join(spectpath, str(n_tot_clip))
-            torch.save(torch.from_numpy(s).float(), path+'.spectrum')
-            torch.save(torch.from_numpy(l).float(), path+'.label')
+            
+            # torch.save(torch.from_numpy(s).float(), path+'.spectrum')
+            # torch.save(torch.from_numpy(l).float(), path+'.label')
+            
+            # np.savez_compressed(path, spectrum=s.astype('float'), label=l.astype('float')) 
+
+            import imageio
+            s = ((s - np.log2(0.01)) / (2 - np.log2(0.01)) * 255)
+            imageio.imwrite(path+'_s.jpg', s.astype(np.uint8))
+            imageio.imwrite(path+'_0.jpg', l[0])
+            imageio.imwrite(path+'_1.jpg', l[1])
+            
             n_tot_clip += 1
