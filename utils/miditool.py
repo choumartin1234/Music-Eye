@@ -2,7 +2,9 @@ import os
 import midi
 from .utils import quote
 from collections import namedtuple
-
+import numpy as np
+import math
+import random
 
 def play(file):
     r"""
@@ -11,7 +13,7 @@ def play(file):
     os.system("timidity " + quote(file))
 
 
-def transpose_tone(infile, outfile, bias):
+def transpose_tone(infile, outfile, bias, change_tempo=False):
     r"""
     Transpose the tone of a midi file. If `bias` is negative,
     it becomes flat. If `bias` is  positive, it becomes sharp.
@@ -21,6 +23,7 @@ def transpose_tone(infile, outfile, bias):
         outfile (str): output midi file
         bias (int): the distance the tone shifts. If the bias is too large,
             and makes some note out of [21, 108], the bias will be modified.
+        change_tempo (bool): if randomly change tempo (by setting resolution)
     """
 
     pattern = midi.read_midifile(infile)
@@ -40,11 +43,12 @@ def transpose_tone(infile, outfile, bias):
         for evt in track:
             if isinstance(evt, (midi.NoteOnEvent, midi.NoteOffEvent)):
                 evt.data[0] += bias
+    if change_tempo: pattern.resolution = math.ceil(2**(np.log2(pattern.resolution) + np.random.rand()*2) - 1)
     midi.write_midifile(outfile, pattern)
 
 
 def restrict_instrument(infile, outfile, allowset=None,
-                        forbidset=[47, 49, 48, 67, 19, 52]):
+                        forbidset=[], reassign=False, remove_drum=True):
     r"""
     Restrict the midi instrument in `allowset` for every track.
     If `allowset` is `None`, the `allowset` will be the instruments
@@ -57,19 +61,38 @@ def restrict_instrument(infile, outfile, allowset=None,
         forbidset (list): a list of ids of forbidden instruments
     """
     pattern = midi.read_midifile(infile)
+    pattern.make_ticks_abs()
 
     if allowset is None:
-        allowset == [i for i in range(256) if i not in forbidset]
+        allowset = [i for i in range(128) if i not in forbidset]
 
     if pattern.format not in (0, 1):
         raise ValueError(
             "Pattern format is not 0 or 1. Format 2 is not supported.")
 
+    new_tracks = []
+    drum_channel = [9]
     for track in pattern:
+        new_track = []
         for evt in track:
+            if isinstance(evt, (midi.NoteOnEvent, midi.NoteOffEvent)):
+                if (evt.channel in drum_channel) and remove_drum:
+                    continue
             if isinstance(evt, midi.ProgramChangeEvent):
-                if evt.data[0] not in allowset:
-                    evt.data[0] = allowset[0]
+                if evt.data[0] >= 113 and remove_drum:
+                    drum_channel.append(evt.channel)
+                    continue
+                if evt.data[0] == 14:
+                    evt.data[0] = 0
+                if reassign or evt.data[0] not in allowset:
+                    evt.data[0] = random.choice(allowset)
+            new_track.append(evt)
+        new_track = midi.Track(new_track, tick_relative=False)
+        new_tracks.append(new_track)
+    
+    if len(new_tracks) == 0: raise ValueError('empty pattern')
+    pattern = midi.Pattern(new_tracks, resolution=pattern.resolution, format=pattern.format, tick_relative=False)
+    pattern.make_ticks_rel()
     midi.write_midifile(outfile, pattern)
 
 class AbsNote():
